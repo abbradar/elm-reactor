@@ -10,232 +10,71 @@ function assert(bool, msg)
 }
 
 
-// SIDE BAR
+// SETUP SIDE BAR
 
-var SIDE_BAR_ID = "elm-reactor-side-bar";
-var SIDE_BAR_BODY_ID = "elm-reactor-side-bar-body";
-var SIDE_BAR_WIDTH = 275;
-
-var DARK_GREY = "#4A4A4A";
-var LIGHT_GREY = "#E4E4E4";
-
-function createSideBar()
+function setupSideBar()
 {
-	var debuggingPanelExpanded = true;
+	var div = document.createElement('div');
+	document.body.appendChild(div);
 
-	var sideBar = document.createElement("div");
-	sideBar.id = SIDE_BAR_ID;
-
-	var sideBarBody = document.createElement("div");
-	sideBarBody.id = SIDE_BAR_BODY_ID;
-	sideBarBody.style.overflow = "hidden";
-	sideBarBody.style.height = "100%";
-
-	// Create and style the panel
-	sideBar.style.background = DARK_GREY;
-	sideBar.style.width = SIDE_BAR_WIDTH + "px";
-	sideBar.style.height = "100%";
-	sideBar.style.position = "absolute";
-	sideBar.style.top = "0px";
-	sideBar.style.right = "0px";
-	sideBar.style.transitionDuration = "0.3s";
-	sideBar.style.opacity = 0.97;
-	sideBar.style.zIndex = 1;
-
-	// Prevent clicks from reaching the main elm instance under the panel
-	sideBar.addEventListener("click", blockClicks);
-	function blockClicks(e)
-	{
-		var event = e || window.event;
-		event.cancelBubble = true;
-		if (event.stopPropagation)
-		{
-			event.stopPropagation();
+	var sideBar = Elm.embed(Elm.SideBar, div, {
+		watches: [],
+		model: {
+			paused: false,
+			total: 0,
+			index: 0
 		}
-	}
+	});
 
-	// Create and style the button
-	var tabWidth = 25;
-	var sideBarTab = document.createElement("div");
-	sideBarTab.id = "debugToggle";
-	sideBarTab.style.position = "absolute";
-	sideBarTab.style.width = tabWidth + "px";
-	sideBarTab.style.height = "60px";
-	sideBarTab.style.top = "50%";
-	sideBarTab.style.left = "-" + tabWidth + "px";
-	sideBarTab.style.borderTopLeftRadius = "3px";
-	sideBarTab.style.borderBottomLeftRadius = "3px";
-	sideBarTab.style.background = DARK_GREY;
-
-
-	// Wire the button
-	sideBarTab.onclick = function() {
-		var toolPanel = document.getElementById(SIDE_BAR_ID);
-		if (debuggingPanelExpanded)
-		{
-			toolPanel.style.width = "0px";
-			debuggingPanelExpanded = false;
-		}
-		else
-		{
-			toolPanel.style.right = "0px";
-			toolPanel.style.width = SIDE_BAR_WIDTH + "px";
-			debuggingPanelExpanded = true;
+	var api = {
+		controls: function() {
+		},
+		sendWatches: function(watches) {
+			sideBar.ports.watches.send(watches);
+		},
+		sendModel: function(model) {
+			sideBar.ports.model.send(model);
+		},
+		reportErrors: function(errors) {
+			sideBar.ports.errors.send(errors);
 		}
 	};
 
-	sideBar.appendChild(sideBarTab);
-	sideBar.appendChild(sideBarBody);
-	return sideBar;
+	sideBar.ports.controls.subscribe(function(value) {
+		api.controls(value);
+	});
+
+	return api;
 }
 
 
-// ERROR MESSAGE
-
-var ERROR_MESSAGE_ID = 'elm-reactor-error-message';
-
-function initErrorMessage(message)
+function handleControls(debugState)
 {
-	var node = document.createElement("pre");
-	node.id = ERROR_MESSAGE_ID;
-	node.innerHTML = message;
-	node.style.zindex = 1;
-	node.style.position = "absolute";
-	node.style.top = "0";
-	node.style.left = "0";
-	node.style.color = DARK_GREY;
-	node.style.backgroundColor = LIGHT_GREY;
-	node.style.padding = "1em";
-	node.style.margin = "1em";
-	node.style.borderRadius = "10px";
-	return node;
+	return function(action) {
+	});
 }
 
-
-// EVENT BLOCKER
-
-var EVENT_BLOCKER_ID = 'elm-reactor-event-blocker'
-
-var eventsToIgnore = [
-	"click", "mousemove", "mouseup", "mousedown", "mouseclick", "keydown",
-	"keypress", "keyup", "touchstart", "touchend", "touchcancel", "touchleave",
-	"touchmove", "pointermove", "pointerdown", "pointerup", "pointerover",
-	"pointerout", "pointerenter", "pointerleave", "pointercancel"
-];
-
-function ignore(e)
-{
-	var event = e || window.event;
-	if (event.stopPropagation)
-	{
-		event.stopPropagation();
-	}
-	if (event.cancelBubble !== null)
-	{
-		event.cancelBubble = true;
-	}
-	if (event.preventDefault)
-	{
-		event.preventDefault();
-	}
-	return false;
-}
-
-function initEventBlocker()
-{
-	var node = document.createElement("div");
-	node.id = EVENT_BLOCKER_ID;
-	node.style.position = "absolute";
-	node.style.top = "0px";
-	node.style.left = "0px";
-	node.style.width = "100%";
-	node.style.height = "100%";
-
-	for (var i = eventsToIgnore.length; i-- ;)
-	{
-		node.addEventListener(eventsToIgnore[i], ignore, true);
-	}
-
-	return node;
-}
-
-function addEventBlocker(node)
-{
-	if (!document.getElementById(EVENT_BLOCKER_ID))
-	{
-		node.appendChild(initEventBlocker());
-	}
-}
-
-function removeEventBlocker()
-{
-	var blocker = document.getElementById(EVENT_BLOCKER_ID);
-	if (blocker)
-	{
-		blocker.parentNode.removeChild(blocker);
-	}
-}
 
 
 
 // CODE TO SET UP A MODULE FOR DEBUGGING
 
 Elm.fullscreenDebug = function(moduleName, fileName) {
-	var result = initModuleWithDebugState(moduleName);
 
-	document.body.appendChild(createSideBar());
+	var div = document.createElement('div');
+	document.body.appendChild(div);
 
-	var sideBar = Elm.embed(Elm.SideBar, document.getElementById(SIDE_BAR_BODY_ID), {
-		eventCounter: 0,
-		watches: [],
-		showSwap: true
-	});
+	var sideBar = setupSideBar();
 
-	function updateWatches(index)
-	{
-		sideBar.ports.watches.send(watchesAt(index, result.debugState));
-	}
+	var result = embedModule(moduleName, div);
 
-	sideBar.ports.scrubTo.subscribe(function(index) {
-		jumpTo(index, result.debugState);
-		updateWatches(index);
-	});
-
-	sideBar.ports.pause.subscribe(function(paused) {
-		if (paused)
-		{
-			pause(result.debugState);
-		}
-		else
-		{
-			unpause(result.debugState);
-			redoTraces(result.debugState);
-		}
-	});
-
-	sideBar.ports.restart.subscribe(function() {
-		restart(result.debugState);
-		updateWatches(0);
-	});
-
-	sideBar.ports.permitSwap.subscribe(function(permitSwaps) {
-		result.debugState.permitSwaps = permitSwaps;
-	});
-
-	result.debugState.onNotify = function(debugState) {
-		sideBar.ports.eventCounter.send(debugState.index);
-		updateWatches(debugState.index);
-	};
+	sideBar.controls = handleControls(result.debugState);
 
 	// handle swaps
-	var updates = 'ws://' + window.location.host + '/socket?file=' + fileName
-	var connection = new WebSocket(updates);
+	var connection = new WebSocket('ws://' + window.location.host + '/socket?file=' + fileName);
 	connection.addEventListener('message', function(event) {
-		if (result.debugState.permitSwaps)
-		{
-			result = swap(event.data, result);
-			updateWatches(result.debugState.index);
-		}
+		result = swap(event.data, result, div, sideBar.reportErrors);
+		sideBar.controls = handleControls(result.debugState);
 	});
 	window.addEventListener("unload", function() {
 		connection.close();
@@ -245,22 +84,23 @@ Elm.fullscreenDebug = function(moduleName, fileName) {
 };
 
 
-function initModuleWithDebugState(moduleName)
+function embedModule(moduleName, div)
 {
 	var debugState;
 
 	function make(localRuntime)
 	{
-		var result = initAndWrap(getModule(moduleName), localRuntime);
+		var result = wrapRuntime(getModule(moduleName), localRuntime);
 		debugState = result.debugState;
 		return result.values;
 	}
 
 	return {
-		module: Elm.fullscreen({ make: make }),
+		module: Elm.embed({ make: make }, div),
 		debugState: debugState
 	};
 }
+
 
 function getModule(moduleName)
 {
@@ -276,15 +116,15 @@ function getModule(moduleName)
 
 // DEBUG STATE
 
-function emptyDebugState()
+function initDebugState(paused, pausedAtTime, totalTimeLost, index, events)
 {
 	return {
-		paused: false,
-		pausedAtTime: 0,
-		totalTimeLost: 0,
+		paused: paused,
+		pausedAtTime: pausedAtTime,
+		totalTimeLost: totalTimeLost,
 
-		index: 0,
-		events: [],
+		index: index,
+		events: events,
 		watches: [{}],
 		snapshots: [],
 		asyncCallbacks: [],
@@ -293,66 +133,41 @@ function emptyDebugState()
 		initialAsyncCallbacks: [],
 		signalGraphNodes: [],
 
-		traces: {},
-		traceCanvas: createCanvas(),
-
-		permitSwaps: true,
 		swapInProgress: false,
-
-		onNotify: function() {},
-		refreshScreen: function() {},
-		node: null,
-		notify: function() {}
 	};
 }
 
-function restart(debugState)
+
+function update(action, model)
 {
-	var running = !debugState.paused;
-	if (running)
+	if (action.tag === 'pause')
 	{
 		pause(debugState);
 	}
-	debugState.index = 0;
-	debugState.events = [];
-	debugState.watches = [debugState.watches[0]];
-
-	var snap = debugState.initialSnapshot;
-	debugState.snapshots = [snap];
-	for (var i = snap.length; i--; )
-	{
-		debugState.signalGraphNodes[i].value = snap[i].value;
-	}
-
-	debugState.asyncCallbacks = debugState.initialAsyncCallbacks.map(function(thunk) {
-		return {
-			thunk: thunk,
-			id: 0,
-			executed: false
-		};
-	});
-
-	debugState.traces = {};
-	redoTraces(debugState);
-	debugState.refreshScreen();
-
-	if (running)
+	else if (action.tag === 'play')
 	{
 		unpause(debugState);
+	}
+	else if (action.tag === 'restart')
+	{
+		restart(debugState);
+	}
+	else if (action.tag === 'scrub')
+	{
+		jumpTo(action.value, debugState);
+	}
+	else if (action.tag === 'notify')
+	{
+
 	}
 }
 
 function pause(debugState)
 {
-	if (debugState.paused)
-	{
-		return;
-	}
 	debugState.paused = true;
-	pauseAsyncCallbacks(debugState);
 	debugState.pausedAtTime = Date.now();
-	addEventBlocker(debugState.node);
 }
+
 
 function unpause(debugState)
 {
@@ -372,13 +187,9 @@ function unpause(debugState)
 	var nearestSnapshotIndex = Math.floor(debugState.index / EVENTS_PER_SAVE);
 	debugState.snapshots = debugState.snapshots.slice(0, nearestSnapshotIndex + 1);
 	debugState.events = debugState.events.slice(0, debugState.index);
-	clearTracesAfter(debugState.index, debugState);
 	clearWatchesAfter(debugState.index, debugState);
-
-	unpauseAsyncCallbacks(debugState.asyncCallbacks);
-
-	removeEventBlocker();
 }
+
 
 function jumpTo(index, debugState)
 {
@@ -414,41 +225,32 @@ function jumpTo(index, debugState)
 	redoTraces(debugState);
 }
 
-function swap(rawJsonResponse, oldResult)
-{
-	var error = document.getElementById(ERROR_MESSAGE_ID);
-	if (error)
-	{
-		error.parentNode.removeChild(error);
-	}
 
+function swap(rawJsonResponse, oldResult, div, reportErrors)
+{
 	var response = JSON.parse(rawJsonResponse);
 
+	reportErrors(response.error ? null : response.error);
 	if (!response.code)
 	{
-		var msg = response.error || 'something went wrong with swap';
-		document.body.appendChild(initErrorMessage(msg));
 		return oldResult;
 	}
 	// TODO: pause/unpause?
 	pauseAsyncCallbacks(oldResult.debugState);
 	window.eval(response.code);
 
-	// remove old nodes
-	oldResult.debugState.node.parentNode.removeChild(oldResult.debugState.node);
-	document.body.removeChild(oldResult.debugState.traceCanvas);
 	oldResult.module.dispose();
 
-	var result = initModuleWithDebugState(response.name);
+	var result = embedModule(response.name, div);
 	transferState(oldResult.debugState, result.debugState);
 	return result;
 }
+
 
 function transferState(previousDebugState, debugState)
 {
 	debugState.swapInProgress = true;
 	debugState.events = previousDebugState.events;
-	debugState.onNotify = previousDebugState.onNotify;
 
 	if (previousDebugState.paused)
 	{
@@ -462,217 +264,15 @@ function transferState(previousDebugState, debugState)
 	while (debugState.index < debugState.events.length)
 	{
 		var event = debugState.events[debugState.index];
+		debugState.index += 1;
 		pushWatchFrame(debugState);
 		debugState.notify(event.id, event.value);
-		debugState.index += 1;
 		snapshotIfNeeded(debugState);
 	}
 	redoTraces(debugState);
 	debugState.swapInProgress = false;
 
 	jumpTo(previousDebugState.index, debugState);
-}
-
-
-// CALLBACKS
-
-// TODO: is it weird that the callbacks array never shrinks?
-
-function unpauseAsyncCallbacks(callbacks)
-{
-	callbacks.forEach(function(callback) {
-		if (!callback.executed)
-		{
-			callback.executed = true;
-			callback.thunk();
-		}
-	});
-}
-
-function pauseAsyncCallbacks(debugState)
-{
-	debugState.asyncCallbacks.forEach(function(callback) {
-		if (!callback.executed)
-		{
-			clearTimeout(callback.id);
-		}
-	});
-}
-
-
-
-// TRACES
-
-function clearTracesAfter(index, debugState)
-{
-	var newTraces = {};
-	for (var id in debugState.traces)
-	{
-		var trace = debugState.traces[id];
-		for (var i = trace.length; i--; )
-		{
-			if (trace[i].index < index)
-			{
-				newTraces[id] = debugState.traces[id].slice(0, i + 1);
-				break;
-			}
-		}
-	}
-	debugState.traces = newTraces;
-}
-
-function createCanvas() {
-	var canvas = document.createElement('canvas');
-	// TODO: make dimensions adjust based on screen size
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-	canvas.style.position = "absolute";
-	canvas.style.top = "0";
-	canvas.style.left = "0";
-	canvas.style.pointerEvents = "none";
-	return canvas;
-}
-
-function addTraces(debugState)
-{
-	var ctx = debugState.traceCanvas.getContext('2d');
-
-	ctx.save();
-	for (var id in debugState.traces)
-	{
-		var points = debugState.traces[id];
-		if (points.length < 2)
-		{
-			continue;
-		}
-		var lastTracePoint = points[points.length - 1];
-		if (lastTracePoint.index < debugState.index - 1)
-		{
-			continue;
-		}
-		ctx.beginPath();
-		ctx.moveTo(lastTracePoint.x, lastTracePoint.y);
-		var secondToLastTracePoint = points[points.length - 2];
-		ctx.lineTo(secondToLastTracePoint.x, secondToLastTracePoint.y);
-
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = "rgba(50, 50, 50, 0.4)";
-		ctx.stroke();
-	}
-	ctx.restore();
-}
-
-function redoTraces(debugState) {
-	var ctx = debugState.traceCanvas.getContext('2d');
-
-	// TODO: be more clever about the size of the canvas on resize
-	ctx.clearRect(0, 0, debugState.traceCanvas.width, debugState.traceCanvas.height);
-
-	ctx.save();
-	for (var id in debugState.traces)
-	{
-		var points = debugState.traces[id];
-		var length = points.length;
-		if (length < 2)
-		{
-			continue;
-		}
-		ctx.beginPath();
-		ctx.lineWidth = 1;
-		ctx.moveTo(points[0].x, points[0].y);
-		var currentIndex = debugState.index;
-		var traceIndex = points[0].index;
-		for (var i = 1; traceIndex < currentIndex && i < length; ++i)
-		{
-			var point = points[i];
-			ctx.lineTo(point.x, point.y);
-			traceIndex = point.index;
-		}
-		ctx.strokeStyle = "rgba(50, 50, 50, 0.4)";
-		ctx.stroke();
-
-		for (; i < length; ++i)
-		{
-			var point = points[i];
-			ctx.lineTo(point.x, point.y);
-			traceIndex = point.index;
-		}
-		ctx.strokeStyle = "rgba(50, 50, 50, 0.2)";
-		ctx.stroke();
-	}
-	ctx.restore();
-}
-
-function makeTraceRecorder(debugState, runtime)
-{
-	var List = Elm.List.make(runtime);
-	var Transform = Elm.Transform2D.make(runtime);
-
-	function crawlElement(element)
-	{
-		if (debugState.paused && !debugState.swapInProgress)
-		{
-			return;
-		}
-
-		var e = element.element;
-		if (!e)
-		{
-			return;
-		}
-		if (e.ctor === 'Custom' && e.type === 'Collage')
-		{
-			var w = element.props.width;
-			var h = element.props.height;
-			var identity = A6( Transform.matrix, 1, 0, 0, -1, w/2, h/2 );
-			return A2(List.map, crawlForm(identity), e.model.forms);
-		}
-	}
-
-	function crawlForm(matrix)
-	{
-		return function(form) {
-			if (form.form.ctor == "FGroup")
-			{
-				var scale = form.scale;
-				var localMatrix = A6( Transform.matrix, scale, 0, 0, scale, form.x, form.y );
-
-				var theta = form.theta
-				if (theta !== 0)
-				{
-					localMatrix = A2( Transform.multiply, localMatrix, Transform.rotation(theta) );
-				}
-
-				var newMatrix = A2( Transform.multiply, matrix, localMatrix );
-				A2(List.map, crawlForm(newMatrix), form.form._1);
-			}
-
-			var tag = form.trace;
-			if (!tag)
-			{
-				return;
-			}
-
-			var x = matrix[0] * form.x + matrix[1] * form.y + matrix[2];
-			var y = matrix[3] * form.x + matrix[4] * form.y + matrix[5];
-
-			if ( !(tag in debugState.traces) )
-			{
-				debugState.traces[tag] = [{ index: debugState.index, x: x, y: y }];
-				return;
-			}
-
-			var trace = debugState.traces[tag];
-			var lastPoint = trace[trace.length - 1];
-			if (lastPoint.x === x && lastPoint.y === y)
-			{
-				return;
-			}
-			trace.push({ index: debugState.index, x: x, y: y });
-		}
-	}
-
-	return crawlElement;
 }
 
 
@@ -739,7 +339,7 @@ function compareNumbers(a, b)
 
 // WRAP THE RUNTIME
 
-function initAndWrap(elmModule, runtime)
+function wrapRuntime(elmModule, runtime)
 {
 	var debugState = emptyDebugState();
 
@@ -786,13 +386,12 @@ function initAndWrap(elmModule, runtime)
 	debugState.notify = runtime.notify;
 
 	// Tracing stuff
-	document.body.appendChild(debugState.traceCanvas);
-
 	var replace = Elm.Native.Utils.make(assignedPropTracker).replace;
 
 	runtime.timer.now = function() {
 		if (debugState.paused || debugState.swapInProgress)
 		{
+			console.log('now', debugState.index, debugState.events.length);
 			var event = debugState.events[debugState.index];
 			return event.time;
 		}
@@ -811,10 +410,12 @@ function initAndWrap(elmModule, runtime)
 			return;
 		}
 		var index = debugState.index;
-		var numWatches = debugState.watches.length - 1;
+		var numWatches = debugState.watches.length;
 		assert(
-			index === numWatches,
-			'number of watch frames (' + numWatches + ') should match current index (' + index + ')');
+			index === numWatches - 1,
+			'the current index (' + index + ') should point to the last of '
+			+ numWatches + ' watch frames'
+		);
 		debugState.watches[debugState.index][tag] = value;
 	}
 
@@ -830,11 +431,11 @@ function initAndWrap(elmModule, runtime)
 		debugState.events.push({ id: id, value: value, time: runtime.timer.now() });
 		debugState.index += 1;
 		pushWatchFrame(debugState);
+		console.log(debugState.index, debugState.events.length);
 
 		var changed = runtime.notify(id, value);
 
 		snapshotIfNeeded(debugState);
-		debugState.onNotify(debugState);
 		addTraces(debugState);
 
 		return changed;
@@ -886,14 +487,16 @@ function watchesAt(index, debugState)
 
 function pushWatchFrame(debugState)
 {
-	var length = debugState.watches.length;
-	var oldFrame = length === 0 ? {} : debugState.watches[length - 1];
+	var watches = debugState.watches;
+	var length = watches.length;
+	assert(length > 0, 'the watches tracker should never be empty')
+	var oldFrame = watches[length - 1];
 	var newFrame = {};
 	for (var tag in oldFrame)
 	{
 		newFrame[tag] = oldFrame[tag];
 	}
-	debugState.watches.push(newFrame);
+	watches.push(newFrame);
 }
 
 function clearWatchesAfter(index, debugState)
@@ -991,14 +594,15 @@ var prettyPrint = function() {
 
 	function addSlashes(str)
 	{
-		return str.replace(/\\/g, '\\\\')
-				  .replace(/\n/g, '\\n')
-				  .replace(/\t/g, '\\t')
-				  .replace(/\r/g, '\\r')
-				  .replace(/\v/g, '\\v')
-				  .replace(/\0/g, '\\0')
-				  .replace(/\'/g, "\\'")
-				  .replace(/\"/g, '\\"');
+		return str
+			.replace(/\\/g, '\\\\')
+			.replace(/\n/g, '\\n')
+			.replace(/\t/g, '\\t')
+			.replace(/\r/g, '\\r')
+			.replace(/\v/g, '\\v')
+			.replace(/\0/g, '\\0')
+			.replace(/\'/g, "\\'")
+			.replace(/\"/g, '\\"');
 	}
 
 	function probablyPublic(v)

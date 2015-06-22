@@ -1,90 +1,87 @@
 module SideBar where
 
-import Graphics.Element exposing (..)
-import Html
-import List
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Json.Encode as Json
 import Window
 
 import SideBar.Controls as Controls
-import SideBar.Model as Model
 import SideBar.Watches as Watches
 
 
-view : (Int, Int) -> List (String, String) -> Bool -> Model.Model -> Element
-view (w,h) watches permitSwap state =
-  let controls =
-          Controls.view (w, h) showSwap permitSwap state
-
-      watchView =
-          Html.toElement w (h - 150) (Watches.view watches)
-  in
-      flow down
-        [ controls
-        , watchView
+view
+  : Signal.Address Controls.Action
+  -> List (String, String)
+  -> Controls.Model
+  -> Html
+view address watchData model =
+  div [ sideBarStyle ]
+    [ div [ style ["overflow" => "hidden", "height" => "100%"] ]
+        [ Controls.view address model
+        , Watches.view watchData
         ]
-
-
--- SIGNALS    
-
-main : Signal Element
-main =
-  Signal.map4 view
-    (Signal.map (\(w,h) -> (Controls.panelWidth, h)) Window.dimensions)
-    watches
-    permitSwapMailbox.signal
-    scene
-
-
-scene : Signal Model.Model
-scene =
-  Signal.foldp Model.update Model.startModel aggregateUpdates
-
-
-aggregateUpdates : Signal Model.Action
-aggregateUpdates =
-  Signal.mergeMany
-    [ Signal.map (always Model.Restart) restartMailbox.signal
-    , Signal.map Model.Pause pausedInputMailbox.signal
-    , Signal.map Model.TotalEvents eventCounter
-    , Signal.map Model.ScrubPosition scrubMailbox.signal
+    , div [sideBarTabStyle] []
     ]
 
--- CONTROL MAILBOXES
 
-permitSwapMailbox = Controls.permitSwapMailbox
+(=>) = (,)
 
-restartMailbox = Controls.restartMailbox
 
-pausedInputMailbox = Controls.pausedInputMailbox
+darkGrey = "#4e4e4e"
+sideBarWidth = 275
+tabWidth = 25
+px n = toString n ++ "px"
 
-scrubMailbox = Controls.scrubMailbox
+
+sideBarStyle =
+  style
+    [ "background" => darkGrey
+    , "width" => px sideBarWidth
+    , "height" => "100%"
+    , "position" => "absolute"
+    , "top" => "0px"
+    , "right" => "0px"
+    , "transitionDuration" => "0.3s"
+    , "opacity" => "0.97"
+    , "zIndex" => "1"
+    ]
+
+
+sideBarTabStyle =
+  style
+    [ "position" => "absolute"
+    , "width" => px tabWidth
+    , "height" => "60px"
+    , "top" => "50%"
+    , "left" => px -tabWidth
+    , "border-top-left-radius" => "3px"
+    , "border-bottom-left-radius" => "3px"
+    , "background" => darkGrey
+    ]
+
+
+-- SIGNALS
+
+main : Signal Html
+main =
+  Signal.map2 (view actions.address) watches model
+
+
+actions : Signal.Mailbox Controls.Action
+actions =
+  Signal.mailbox Controls.Restart
+
 
 -- INCOMING PORTS
 
-port eventCounter : Signal Int
-
 port watches : Signal (List (String, String))
 
-port showSwap : Bool
+port model : Signal Controls.Model
 
 
 -- OUTGOING PORTS
 
-port scrubTo : Signal Int
-port scrubTo =
-    scrubMailbox.signal
+port controls : Signal Json.Value
+port controls =
+    Signal.map Controls.actionToJson actions.signal
 
-
-port pause : Signal Bool
-port pause =
-    pausedInputMailbox.signal
-
-
-port restart : Signal Int
-port restart =
-    Signal.map (always 0) restartMailbox.signal
-
-
-port permitSwap : Signal Bool
-port permitSwap =
-    permitSwapMailbox.signal

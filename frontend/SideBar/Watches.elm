@@ -41,14 +41,14 @@ watchAttributes =
 
 
 viewName : String -> Html
-viewName name = 
+viewName name =
   div nameAttributes [ text name ]
 
 
 nameAttributes : List Attribute
 nameAttributes =
-  [ style 
-    [ ("margin", "20px 0 10px") 
+  [ style
+    [ ("margin", "20px 0 10px")
     , ("font-weight", "bold")
     , ("font-family", "Gotham, Futura, 'Lucida Grande', sans-serif")
     ]
@@ -56,15 +56,15 @@ nameAttributes =
 
 
 viewValue : String -> Html
-viewValue value = 
+viewValue value =
   pre valueAttributes [ text value ]
 
 
 valueAttributes : List Attribute
 valueAttributes =
   [ style
-    [ ("margin", "0 0 0 10px") 
-    ] 
+    [ ("margin", "0 0 0 10px")
+    ]
   ]
 
 
@@ -73,16 +73,14 @@ valueAttributes =
 noWatches : Html
 noWatches = Markdown.toHtml """
 
-### <span style="font-family: Gotham, Futura, 'Lucida Grande', sans-serif; font-size: 12pt; color: rgb(170,170,170)"> You don't have any watches! </span>
+### You don't have any watches!
 
-<span style="color: rgb(170,170,170)">
-<span style="font-family: Gotham, Futura, 'Lucida Grande', sans-serif; font-size: 10pt; color: rgb(170,170,170)">
-Use [<span style="text-decoration:underline; color: rgb(170,170,170)">Debug.watch</span>](http://package.elm-lang.org/packages/elm-lang/core/latest/Debug#watch)
-to show any value. <br>
-`watch : String -> a -> a`</span>
+Use [Debug.watch][watch] to show any value. <br>
+`watch : String -> a -> a`
 
-<span style="font-family: Gotham, Futura, 'Lucida Grande', sans-serif; font-size: 10pt; color: rgb(170,170,170)">
-Use [<span style="text-decoration:underline; color: rgb(170,170,170)">Debug.watchSummary</span>](http://package.elm-lang.org/packages/elm-lang/core/latest/Debug#watchSummary) to show a <br>
-summary or subvalue of any value. </span><br>
+Use [Debug.watchSummary][watchSummary] to show a summary or subvalue of any value.
+
+[watch]: http://package.elm-lang.org/packages/elm-lang/core/latest/Debug#watch
+[watchSummary]: http://package.elm-lang.org/packages/elm-lang/core/latest/Debug#watchSummary
 
 """
